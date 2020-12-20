@@ -37,7 +37,7 @@ func AuthenticationMiddlewareFactory(apiSecret string) func(next http.Handler) h
 					w.Write([]byte("error: you should be authorized for this action"))
 					return
 				}
-				cookie, _ := GetCookies(token)
+				cookie, _ := getCookies(token)
 				user = &SAPAuth{Value: cookie, Type: Cookies}
 
 			case "Basic":
@@ -51,7 +51,14 @@ func AuthenticationMiddlewareFactory(apiSecret string) func(next http.Handler) h
 	}
 }
 
-func GetCookies(cookies jwt.MapClaims) (string, error) {
+func GetRequestUser(r *http.Request) *SAPAuth {
+	jsonUser := r.Header.Get("x-auth")
+	user := &SAPAuth{}
+	_ = json.Unmarshal([]byte(jsonUser), user)
+	return user
+}
+
+func getCookies(cookies jwt.MapClaims) (string, error) {
 	const UserCtxCookie = "sap-usercontext"
 	const SsoCookie = "MYSAPSSO2"
 	const SapSession = "SAP_SESSIONID_BID_100"
