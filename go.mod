@@ -1,1 +1,1 @@
-module github.com/uxland/mys-sap-client
+module github.com/uxland/go-mys-sap-client
