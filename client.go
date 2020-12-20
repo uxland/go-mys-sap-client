@@ -20,14 +20,6 @@ const (
 	Cookies SAPAuthenticationType = 1
 )
 
-//Holds authentication info to send to SAP
-type SAPAuth struct {
-	//Authentication type in Value
-	Type SAPAuthenticationType
-	//A SAP Cookie or username:pwd in base64
-	Value string
-
-}
 type SAPCommand struct {
 	Name    string
 	Payload interface{}
@@ -39,8 +31,8 @@ type SAPClient interface {
 }
 
 type sapClient struct {
-	URLBase string
-	MySAppID string
+	URLBase   string
+	MySAppID  string
 	SAPClient string
 }
 
@@ -50,19 +42,20 @@ func NewClient(URLBase string, mysAppID string, SAPClient string) SAPClient {
 
 func (s *sapClient) SendCommand(cmd *SAPCommand, result interface{}) error {
 	args := &fetchArgs{
-		method:      "POST",
-		url:         "command",
-		body:        cmd.Payload,
-		headers:     nil,
+		method:  "POST",
+		url:     "command",
+		body:    cmd.Payload,
+		headers: nil,
 		queryParams: map[string]string{
 			"APPID":      s.MySAppID,
 			"COMMAND":    cmd.Name,
 			"sap-client": s.SAPClient,
 		},
-		user:        cmd.User,
+		user: cmd.User,
 	}
 	return s.fetch(args, result)
 }
+
 type fetchArgs struct {
 	method      string
 	url         string
@@ -71,7 +64,6 @@ type fetchArgs struct {
 	queryParams map[string]string
 	user        *SAPAuth
 }
-
 
 func (s *sapClient) fetch(args *fetchArgs, result interface{}) error {
 	timeout := 10 * time.Minute
@@ -92,7 +84,7 @@ func (s *sapClient) fetch(args *fetchArgs, result interface{}) error {
 
 func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
 	body, err := json.Marshal(args.body)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	URL := s.buildUrl(args)
@@ -101,9 +93,9 @@ func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
 		return nil, err
 	}
 	request.Header.Set("content-type", "application/json")
-	if args.user.Type == Basic{
+	if args.user.Type == Basic {
 		request.Header.Set("Authorization", "Basic "+args.user.Value)
-	}else{
+	} else {
 		request.Header.Set("cookie", args.user.Value)
 	}
 	return request, nil
