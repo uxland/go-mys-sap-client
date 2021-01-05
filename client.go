@@ -93,10 +93,12 @@ func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
 		return nil, err
 	}
 	request.Header.Set("content-type", "application/json")
-	if args.user.Type == Basic {
-		request.Header.Set("Authorization", "Basic "+args.user.Value)
-	} else {
-		request.Header.Set("cookie", args.user.Value)
+	if args.user != nil {
+		if args.user.Type == Basic {
+			request.Header.Set("Authorization", "Basic "+args.user.Value)
+		} else {
+			request.Header.Set("cookie", args.user.Value)
+		}
 	}
 	return request, nil
 }
