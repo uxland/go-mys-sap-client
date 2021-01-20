@@ -28,7 +28,7 @@ type SAPCommand struct {
 }
 
 type SAPClient interface {
-	SendCommand(cmd *SAPCommand, result interface{}) error
+	SendCommand(cmd *SAPCommand, result interface{}) (*SapResponse, error)
 }
 
 type sapClient struct {
@@ -41,7 +41,7 @@ func NewClient(URLBase string, mysAppID string, SAPClient string) SAPClient {
 	return &sapClient{URLBase: URLBase, MySAppID: mysAppID, SAPClient: SAPClient}
 }
 
-func (s *sapClient) SendCommand(cmd *SAPCommand, result interface{}) error {
+func (s *sapClient) SendCommand(cmd *SAPCommand, result interface{}) (*SapResponse, error) {
 	args := &fetchArgs{
 		method:  "POST",
 		url:     "command",
@@ -66,19 +66,19 @@ type fetchArgs struct {
 	user        *SAPAuth
 }
 
-func (s *sapClient) fetch(args *fetchArgs, result interface{}) error {
+func (s *sapClient) fetch(args *fetchArgs, result interface{}) (*SapResponse, error) {
 	timeout := 10 * time.Minute
 	client := http.Client{
 		Timeout: timeout,
 	}
 	request, err := s.createRequest(args)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	response, err := client.Do(request)
 	if err != nil {
 		log.Printf("error fetching SAP:\n%s\n", err.Error())
-		return err
+		return nil, err
 	}
 	return handlerResponse(response, result)
 }
@@ -128,15 +128,18 @@ func queryParamsBuilder(args *fetchArgs) string {
 	return res
 }
 
-type sapMessage struct {
+type SapMessage struct {
 	MsgType  string `json:"msgType"`
 	MsgTitle string `json:"msgTitle"`
 }
+type SapResponse struct {
+	Result   int    `json:"result"`
+	Success  string `json:"SUCCESS"`
+	Messages []SapMessage
+}
 type sapModel struct {
-	Data     interface{} `json:"DATA,omitempty"`
-	Result   int         `json:"result"`
-	Success  string      `json:"SUCCESS"`
-	Messages []sapMessage
+	*SapResponse
+	Data interface{} `json:"DATA,omitempty"`
 }
 type HttpError struct {
 	StatusCode int
@@ -156,7 +159,7 @@ func checkHttpStatus(response *http.Response) error {
 	return checkHttpStatusInternal(response.StatusCode, response.Status)
 }
 
-func checkErrorsInSapResponse(sapResponse *sapModel) error {
+func checkErrorsInSapResponse(sapResponse *SapResponse) error {
 	var err error
 	if sapResponse.Result > 0 {
 		err = checkHttpStatusInternal(sapResponse.Result, "error")
@@ -175,26 +178,26 @@ func checkErrorsInSapResponse(sapResponse *sapModel) error {
 	}
 	return err
 }
-func handlerResponse(response *http.Response, result interface{}) error {
+func handlerResponse(response *http.Response, result interface{}) (*SapResponse, error) {
 	err := checkHttpStatus(response)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	body, err := ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	m := &sapModel{}
+	m := &SapResponse{}
 	err = json.Unmarshal(body, m)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = checkErrorsInSapResponse(m)
 	if err != nil {
-		return err
+		return m, err
 	}
-	//data := []byte(m.Data)
-	data, err := json.Marshal(m.Data)
-	return json.Unmarshal(data, result)
+	model := &sapModel{Data: result}
+	err = json.Unmarshal(body, model)
+	return model.SapResponse, err
 }
