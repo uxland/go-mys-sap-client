@@ -156,7 +156,7 @@ func checkSapErrors(body []byte) error {
 	}
 	resp := &responseResult{}
 	err := json.Unmarshal(body, resp)
-	if err == nil {
+	if err == nil && resp.Result != 0 {
 		err = checkHttpStatusInternal(resp.Result, "error")
 		if err != nil {
 			return err
