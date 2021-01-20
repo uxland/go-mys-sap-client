@@ -1,6 +1,7 @@
 package mys_sap_client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,8 @@ type SAPAuth struct {
 	//A SAP Cookie or username:pwd in base64
 	Value string
 }
+
+const sapAuthKey = "sap-auth"
 
 func AuthenticationMiddlewareFactory(apiSecret string) func(next http.Handler) http.Handler {
 	apiSecretBytes := []byte(apiSecret)
@@ -45,16 +48,18 @@ func AuthenticationMiddlewareFactory(apiSecret string) func(next http.Handler) h
 				break
 			}
 			bytes, _ := json.Marshal(user)
-			r.Header.Set("x-auth", string(bytes))
+			ctx := context.WithValue(r.Context(), sapAuthKey, bytes)
+			r = r.WithContext(ctx)
+
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 func GetRequestUser(r *http.Request) *SAPAuth {
-	jsonUser := r.Header.Get("x-auth")
+	jsonUser, _ := r.Context().Value(sapAuthKey).([]byte)
 	user := &SAPAuth{}
-	_ = json.Unmarshal([]byte(jsonUser), user)
+	_ = json.Unmarshal(jsonUser, user)
 	return user
 }
 
