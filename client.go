@@ -3,6 +3,7 @@ package mys_sap_client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -127,18 +128,85 @@ func queryParamsBuilder(args *fetchArgs) string {
 	return res
 }
 
+type sapMessage struct {
+}
 type sapModel struct {
-	Data     interface{} `json:"DATA"`
-	Success  string      `json:"SUCCESS"`
-	Messages interface{}
+	Data interface{} `json:"DATA"`
+}
+type HttpError struct {
+	StatusCode int
+	Message    string
 }
 
+func (h *HttpError) Error() string {
+	return fmt.Sprintf("Http error: %d, %s", h.StatusCode, h.Message)
+}
+func checkHttpStatusInternal(statusCode int, message string) error {
+	if statusCode >= 200 && statusCode < 300 {
+		return nil
+	}
+	return &HttpError{Message: message, StatusCode: statusCode}
+}
+func checkHttpStatus(response *http.Response) error {
+	return checkHttpStatusInternal(response.StatusCode, response.Status)
+}
+func checkSapErrors(body []byte) error {
+	type responseResult struct {
+		Result int `json:"result"`
+	}
+	resp := &responseResult{}
+	err := json.Unmarshal(body, resp)
+	if err == nil {
+		err = checkHttpStatusInternal(resp.Result, "error")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func checkErrorsInMessage(buffer []byte) error {
+	type sapMessage struct {
+		MsgType  string `json:"msgType"`
+		MsgTitle string `json:"msgTitle"`
+	}
+	type model struct {
+		Success  string `json:"SUCCESS"`
+		Messages []sapMessage
+	}
+	m := &model{}
+	err := json.Unmarshal(buffer, m)
+	if err == nil {
+		message := ""
+		for _, s := range m.Messages {
+			if s.MsgType == "E" {
+				message = fmt.Sprintf("%s\n%s", message, s.MsgTitle)
+			}
+		}
+		if len(message) > 0 {
+			return errors.New(message)
+		}
+	}
+	return nil
+}
 func handlerResponse(response *http.Response, result interface{}) error {
+	err := checkHttpStatus(response)
+	if err != nil {
+		return err
+	}
 	body, err := ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
 		return err
 	}
-	sapModel := &sapModel{Data: result}
-	return json.Unmarshal(body, sapModel)
+	err = checkSapErrors(body)
+	if err != nil {
+		return err
+	}
+	err = checkErrorsInMessage(body)
+	if err != nil {
+		return err
+	}
+	model := &sapModel{Data: result}
+
+	return json.Unmarshal(body, model)
 }
