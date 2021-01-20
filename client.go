@@ -133,9 +133,9 @@ type sapMessage struct {
 	MsgTitle string `json:"msgTitle"`
 }
 type sapModel struct {
-	Data     string `json:"DATA"`
-	Result   int    `json:"result"`
-	Success  string `json:"SUCCESS"`
+	Data     interface{} `json:"DATA,omitempty"`
+	Result   int         `json:"result"`
+	Success  string      `json:"SUCCESS"`
 	Messages []sapMessage
 }
 type HttpError struct {
@@ -170,7 +170,7 @@ func checkErrorsInSapResponse(sapResponse *sapModel) error {
 			message = fmt.Sprintf("%s\n%s", message, s.MsgTitle)
 		}
 	}
-	if len(message) > 0 {
+	if len(message) > 0 || sapResponse.Success != "X" {
 		err = errors.New(message)
 	}
 	return err
@@ -194,6 +194,7 @@ func handlerResponse(response *http.Response, result interface{}) error {
 	if err != nil {
 		return err
 	}
-	data := []byte(m.Data)
+	//data := []byte(m.Data)
+	data, err := json.Marshal(m.Data)
 	return json.Unmarshal(data, result)
 }
