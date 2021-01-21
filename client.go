@@ -199,5 +199,13 @@ func handlerResponse(response *http.Response, result interface{}) (*SapResponse,
 	}
 	model := &sapModel{Data: result}
 	err = json.Unmarshal(body, model)
+	if err != nil {
+		unmarshallError := &json.UnmarshalTypeError{}
+		if errors.As(err, unmarshallError) {
+			if unmarshallError.Value == "string" {
+				err = nil
+			}
+		}
+	}
 	return model.SapResponse, err
 }
