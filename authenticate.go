@@ -8,9 +8,6 @@ import (
 
 func (s *sapClient) Authenticate(auth SAPAuth) (*SAPUser, error) {
 	args := &fetchArgs{url: "user-info", user: &auth}
-	type response struct {
-	}
-	//res := &response{}
 	resp, err := s.fetch(args)
 	if err != nil {
 		return nil, err
