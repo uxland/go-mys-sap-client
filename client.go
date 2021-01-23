@@ -40,7 +40,7 @@ type SAPUser struct {
 type SAPClient interface {
 	SendCommand(cmd *SAPCommand, result interface{}) (*SapResponse, error)
 	Authenticate(auth SAPAuth) (*SAPUser, error)
-	ListUsers(search string)
+	ListUsers(search string, maxResults int32, auth SAPAuth) ([]SAPUserInfo, error)
 }
 
 type sapClient struct {
@@ -51,10 +51,6 @@ type sapClient struct {
 
 func NewClient(URLBase string, mysAppID string, SAPClient string) SAPClient {
 	return &sapClient{URLBase: URLBase, MySAppID: mysAppID, SAPClient: SAPClient}
-}
-
-func (s *sapClient) ListUsers(search string) {
-	panic("implement me")
 }
 
 type fetchArgs struct {
