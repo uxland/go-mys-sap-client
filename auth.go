@@ -64,22 +64,30 @@ func GetRequestUser(r *http.Request) *SAPAuth {
 }
 
 func getCookies(cookies jwt.MapClaims) (string, error) {
-	const UserCtxCookie = "sap-usercontext"
-	const SsoCookie = "MYSAPSSO2"
-	const SapSession = "SAP_SESSIONID_BID_100"
+	const userCtxCookieKey = "sap-usercontext"
+	const ssoCookieKey = "MYSAPSSO2"
+	const sapSessionCookieKey = "SAP_SESSIONID_BID_100"
+
 	var cookie string
 	for key, value := range cookies {
 		if key == "accesses" {
-			userContext := value.(interface{}).(map[string]interface{})[UserCtxCookie]
-			ssoCookie := value.(interface{}).(map[string]interface{})[SsoCookie]
-			sapSession := value.(interface{}).(map[string]interface{})[SapSession]
+			userContext := value.(interface{}).(map[string]interface{})[userCtxCookieKey]
+			ssoCookie := value.(interface{}).(map[string]interface{})[ssoCookieKey]
+			sapSession := value.(interface{}).(map[string]interface{})[sapSessionCookieKey]
 			cookie = fmt.Sprintf(`%s=%s; %s=%s; %s=%s;`,
-				UserCtxCookie, userContext,
-				SsoCookie, ssoCookie,
-				SapSession, sapSession)
+				userCtxCookieKey, userContext,
+				ssoCookie, ssoCookie,
+				sapSession, sapSession)
 		}
 	}
 	return cookie, nil
+}
+func buildSapCookies(cookies map[string]string) string {
+	var cookie string
+	for key, value := range cookies {
+		cookie = fmt.Sprintf("%s%s=%s; ", cookie, key, value)
+	}
+	return cookie
 }
 func validateToken(token string, apiSecret []byte) (jwt.MapClaims, error) {
 	var verifiedToken, tokenError = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
