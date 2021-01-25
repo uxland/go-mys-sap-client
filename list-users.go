@@ -2,17 +2,19 @@ package mys_sap_client
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 func (s *sapClient) ListUsers(search string, maxResults int32, auth SAPAuth) ([]SAPUserInfo, error) {
-	type body struct {
-		Search     string
-		MaxResults int32
-	}
 	args := &fetchArgs{
-		url:  "list-users",
-		body: &body{MaxResults: maxResults, Search: search},
+		url: "user-list",
+		queryParams: map[string]string{
+			"SEARCH":     search,
+			"MAXRESULTS": strconv.Itoa(int(maxResults)),
+			"sap-client": s.SAPClient,
+		},
 		user: &auth,
 	}
 	response, err := s.fetch(args)
@@ -23,17 +25,19 @@ func (s *sapClient) ListUsers(search string, maxResults int32, auth SAPAuth) ([]
 }
 
 func handleListUsersResponse(response *http.Response) ([]SAPUserInfo, error) {
-	buffer, _, err := assertNoErrorsInResponse(response)
+	err := checkHttpStatus(response)
 	if err != nil {
 		return nil, err
 	}
-	type modelData struct {
-		Data []SAPUserInfo
-	}
-	model := &modelData{}
-	err = json.Unmarshal(buffer, model)
+	buffer, err := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
 	if err != nil {
 		return nil, err
 	}
-	return model.Data, nil
+	var model []SAPUserInfo
+	err = json.Unmarshal(buffer, &model)
+	if err != nil {
+		return nil, err
+	}
+	return model, nil
 }

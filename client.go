@@ -28,8 +28,8 @@ type SAPCommand struct {
 }
 
 type SAPUserInfo struct {
-	UserID      string
-	DisplayName string
+	UserID      string `json:"USERNAME"`
+	DisplayName string `json:"FULLNAME"`
 }
 
 type SAPUser struct {

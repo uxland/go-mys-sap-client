@@ -7,7 +7,9 @@ import (
 )
 
 func (s *sapClient) Authenticate(auth SAPAuth) (*SAPUser, error) {
-	args := &fetchArgs{url: "user-info", user: &auth}
+	args := &fetchArgs{url: "user-info", user: &auth, queryParams: map[string]string{
+		"sap-client": s.SAPClient,
+	}}
 	resp, err := s.fetch(args)
 	if err != nil {
 		return nil, err
