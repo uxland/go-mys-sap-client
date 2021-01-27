@@ -94,6 +94,7 @@ func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
 	if args.user != nil {
 		if args.user.Type == Basic {
 			request.Header.Set("Authorization", "Basic "+args.user.Value)
+			request.Header.Set("cookie", "")
 		} else {
 			request.Header.Set("cookie", args.user.Value)
 		}
