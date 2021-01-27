@@ -77,7 +77,6 @@ func (s *sapClient) fetch(args *fetchArgs) (*http.Response, error) {
 		return nil, err
 	}
 	return response, nil
-	//return handlerResponse(response, result)
 }
 
 func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
