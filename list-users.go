@@ -17,7 +17,7 @@ func (s *sapClient) ListUsers(search string, maxResults int32, auth SAPAuth) ([]
 		},
 		user: &auth,
 	}
-	response, err := s.fetch(args)
+	response, _, err := s.fetch(args)
 	if err != nil {
 		return nil, err
 	}

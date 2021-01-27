@@ -16,6 +16,8 @@ type SAPAuth struct {
 	Type SAPAuthenticationType
 	//A SAP Cookie or username:pwd in base64
 	Value string
+
+	Cookies map[string]string
 }
 
 const sapAuthKey = "sap-auth"

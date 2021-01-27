@@ -3,22 +3,21 @@ package mys_sap_client
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 )
 
 func (s *sapClient) Authenticate(auth SAPAuth) (*SAPUser, error) {
 	args := &fetchArgs{url: "user-info", user: &auth, queryParams: map[string]string{
 		"sap-client": s.SAPClient,
 	}}
-	resp, err := s.fetch(args)
+	resp, jar, err := s.fetch(args)
 	if err != nil {
 		return nil, err
 	}
-	return handleAuthentication(resp)
+	return handleAuthentication(resp, jar)
 }
 
-func extractCookies(response *http.Response) map[string]string {
-	header := response.Header.Get("set-cookie")
+func extractCookies(response *http.Response, jar http.CookieJar) map[string]string {
+	/*header := response.Header.Get("set-cookie")
 	cookies := strings.Split(header, ",")
 	cookiesMap := make(map[string]string)
 	for _, s := range cookies {
@@ -28,10 +27,11 @@ func extractCookies(response *http.Response) map[string]string {
 		cookiesMap[key] = value
 
 	}
-	return cookiesMap
+	return cookiesMap*/
+	return toCookiesMap(jar.Cookies(nil))
 }
 
-func handleAuthentication(response *http.Response) (*SAPUser, error) {
+func handleAuthentication(response *http.Response, jar http.CookieJar) (*SAPUser, error) {
 	buffer, _, err := assertNoErrorsInResponse(response)
 	if err != nil {
 		return nil, err
@@ -46,5 +46,5 @@ func handleAuthentication(response *http.Response) (*SAPUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &SAPUser{UserID: model.UserData.UserID, Cookies: extractCookies(response)}, nil
+	return &SAPUser{UserID: model.UserData.UserID, Cookies: extractCookies(response, jar)}, nil
 }

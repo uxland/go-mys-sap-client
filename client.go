@@ -62,23 +62,32 @@ type fetchArgs struct {
 	user        *SAPAuth
 }
 
-func (s *sapClient) fetch(args *fetchArgs) (*http.Response, error) {
+func (s *sapClient) fetch(args *fetchArgs) (*http.Response, http.CookieJar, error) {
 	timeout := 10 * time.Minute
+	jar := newSapCookieJar(args.user)
+
 	client := http.Client{
 		Timeout: timeout,
+		Jar:     jar,
 	}
 	request, err := s.createRequest(args)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	response, err := client.Do(request)
 	if err != nil {
 		log.Printf("error fetching SAP:\n%s\n", err.Error())
-		return nil, err
+		return nil, nil, err
 	}
-	return response, nil
+	return response, jar, nil
 }
-
+func getNoCookie() string {
+	const UserCtxCookie = "sap-usercontext"
+	const SsoCookie = "MYSAPSSO2"
+	const SapSessionCookie = "SAP_SESSIONID_BID_100"
+	noCookie := fmt.Sprintf("%s=nop;%s=nop;%s=nop;", UserCtxCookie, SsoCookie, SapSessionCookie)
+	return noCookie
+}
 func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
 	body, err := json.Marshal(args.body)
 	if err != nil {
@@ -93,9 +102,6 @@ func (s *sapClient) createRequest(args *fetchArgs) (*http.Request, error) {
 	if args.user != nil {
 		if args.user.Type == Basic {
 			request.Header.Set("Authorization", "Basic "+args.user.Value)
-			request.Header.Set("cookie", "")
-		} else {
-			request.Header.Set("cookie", args.user.Value)
 		}
 	}
 	return request, nil

@@ -19,7 +19,7 @@ func (s *sapClient) SendCommand(cmd *SAPCommand, result interface{}) (*SapRespon
 		},
 		user: cmd.User,
 	}
-	response, err := s.fetch(args)
+	response, _, err := s.fetch(args)
 	if err != nil {
 		return nil, err
 	}
