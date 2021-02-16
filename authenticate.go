@@ -40,11 +40,18 @@ func handleAuthentication(response *http.Response, jar http.CookieJar) (*SAPUser
 		UserData struct {
 			UserID string `json:"USERNAME"`
 		} `json:"USER_DATA"`
+		Apps []struct {
+			AppID string
+		}
 	}
 	model := &authModel{}
 	err = json.Unmarshal(buffer, model)
 	if err != nil {
 		return nil, err
 	}
-	return &SAPUser{UserID: model.UserData.UserID, Cookies: extractCookies(response, jar)}, nil
+	apps := make(map[string]string)
+	for _, app := range model.Apps {
+		apps[app.AppID] = app.AppID
+	}
+	return &SAPUser{UserID: model.UserData.UserID, Cookies: extractCookies(response, jar), Apps: apps}, nil
 }
