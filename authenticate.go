@@ -49,9 +49,9 @@ func handleAuthentication(response *http.Response, jar http.CookieJar) (*SAPUser
 	if err != nil {
 		return nil, err
 	}
-	apps := make(map[string]string)
+	apps := make([]string, 0)
 	for _, app := range model.Apps {
-		apps[app.AppID] = app.AppID
+		apps = append(apps, app.AppID)
 	}
 	return &SAPUser{UserID: model.UserData.UserID, Cookies: extractCookies(response, jar), Apps: apps}, nil
 }

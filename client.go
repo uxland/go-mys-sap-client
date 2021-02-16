@@ -35,7 +35,7 @@ type SAPUserInfo struct {
 type SAPUser struct {
 	UserID  string
 	Cookies map[string]string
-	Apps    map[string]string
+	Apps    []string
 }
 
 type SAPClient interface {
