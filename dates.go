@@ -5,10 +5,18 @@ import (
 	"time"
 )
 
+func parseTime(layout string, val string) (time.Time, error) {
+	if zone != "" {
+		layout += " Z07"
+		val += " " + zone
+	}
+	return time.Parse(layout, val)
+}
+
 //Converts a sap string datetime in format yyyyMMddHHmmss to a go time
 func FromSAPDateTime(date, t string) time.Time {
 	const layout = "20060102150405"
-	parsed, err := time.Parse(layout, date+t)
+	parsed, err := parseTime(layout, date+t)
 	if err != nil {
 		return time.Now()
 	}
@@ -18,7 +26,7 @@ func FromSAPDateTime(date, t string) time.Time {
 //Converts a sap string date in format yyyyMMdd to a go time
 func FromSAPDate(date string) time.Time {
 	const layout = "20060102"
-	parsed, err := time.Parse(layout, date)
+	parsed, err := parseTime(layout, date)
 	if err != nil {
 		return time.Now()
 	}
@@ -26,6 +34,7 @@ func FromSAPDate(date string) time.Time {
 }
 
 var location *time.Location
+var zone string
 
 func SetTimeLocation(name string) {
 	l, err := time.LoadLocation(name)
@@ -34,6 +43,7 @@ func SetTimeLocation(name string) {
 		return
 	}
 	location = l
+	zone, _ = time.Now().In(location).Zone()
 
 }
 
