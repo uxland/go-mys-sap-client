@@ -6,9 +6,8 @@ import (
 )
 
 func parseTime(layout string, val string) (time.Time, error) {
-	if zone != "" {
-		layout += " Z07"
-		val += " " + zone
+	if location != nil {
+		return time.ParseInLocation(layout, val, location)
 	}
 	return time.Parse(layout, val)
 }
@@ -34,7 +33,6 @@ func FromSAPDate(date string) time.Time {
 }
 
 var location *time.Location
-var zone string
 
 func SetTimeLocation(name string) {
 	l, err := time.LoadLocation(name)
@@ -43,8 +41,6 @@ func SetTimeLocation(name string) {
 		return
 	}
 	location = l
-	zone, _ = time.Now().In(location).Zone()
-
 }
 
 func localeTime(t time.Time) time.Time {
